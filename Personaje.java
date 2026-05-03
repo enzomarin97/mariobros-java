@@ -3,6 +3,7 @@ public class Personaje implements Movimientos {
     
     //protected String color;
 
+    // como el color es private las clases hijas solo pueden accederlas con un getColor - esto es Encapsulamiento
     public String getColor() {
         return color;
     }

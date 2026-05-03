@@ -37,8 +37,6 @@ public interface Movimientos {
 
 La clase `Personaje` implementa la interface `Movimientos` y es la **clase padre**. Puede tener variables `private`, las cuales no son accesibles directamente por las clases hijas sino a través de métodos como `getColor()` — eso es el **Encapsulamiento**.
 
-> Si quisiéramos que las hijas accedan directo a una variable del padre, usaríamos `protected` en lugar de `private`.
-
 La clase padre también puede tener métodos que sus hijas heredan y pueden:
 - ✅ **Usar** tal cual
 - ✅ **Sobreescribir** con `@Override`
@@ -46,28 +44,75 @@ La clase padre también puede tener métodos que sus hijas heredan y pueden:
 
 ```java
 public class Personaje implements Movimientos {
-    private String color; // no accesible directamente por las hijas
+    private String color;   // solo accesible via getColor()
+    protected int altura;   // accesible directamente por las clases hijas
 
-    public String getColor() { // las hijas acceden a color solo por acá
+    public String getColor() {
         return color;
     }
 
-    public Personaje(String color) {
+    public Personaje(String color, int altura) {
         this.color = color;
+        this.altura = altura;
     }
 }
 ```
 
 ---
 
+### `private` vs `protected`
+
+| Modificador | ¿Accesible desde la hija? | ¿Cómo? |
+|---|---|---|
+| `private` | ❌ No directamente | Solo via getter (`getColor()`) |
+| `protected` | ✅ Sí directamente | `this.altura` desde la hija |
+
+---
+
 ### Herencia — `Mario` y `Luigi`
 
-Las clases hijas `Mario` y `Luigi` heredan variables y métodos de `Personaje` gracias a la palabra clave `extends`. Además pueden tener sus propias variables y métodos privados, como `usarAspiradora()` en `Luigi`, que es una habilidad que `Mario` no tiene.
+Las clases hijas `Mario` y `Luigi` heredan variables y métodos de `Personaje` gracias a `extends`. Se trabajaron dos variantes distintas de `protected` a modo didáctico:
+
+**Opción A — Mario: `altura` como parámetro del constructor**
+
+`altura` se recibe desde afuera al instanciar el objeto y se pasa al padre con `super()`. Es la misma mecánica que `color`.
 
 ```java
-public class Mario extends Personaje { ... }
-public class Luigi extends Personaje { ... }
+public Mario(String color, String nombre, int altura) {
+    super(color, altura); // le pasa altura al constructor del padre
+    this.nombre = nombre;
+}
 ```
+
+En el `Main`:
+```java
+Movimientos mario = new Mario("rojo", "mario", 1); // altura = 1, definida desde afuera
+```
+
+**Opción B — Luigi: `altura` fija dentro de la clase**
+
+`altura` no viene de afuera, está hardcodeada dentro del constructor de Luigi. Como es `protected`, la hija puede asignarla directamente con `this.altura`.
+
+```java
+public Luigi(String color, String nombre) {
+    super(color, 0); // valor por defecto al padre
+    this.nombre = nombre;
+    this.altura = 2; // Luigi siempre mide 2, es fijo
+}
+```
+
+> **Nota:** En el código actual Luigi todavía recibe `altura` como parámetro del constructor porque `super()` la requiere, pero inmediatamente la pisa con `this.altura = 2`. Esto significa que el valor que se le pase al instanciar Luigi siempre será ignorado. La Opción B pura sería quitar `altura` del constructor de Luigi por completo.
+
+---
+
+### Fuente de verdad única
+
+Mezclar ambas estrategias en un mismo atributo genera inconsistencias: `altura` puede ser definida en el `Main`, en el `super()`, y en el `this.altura` al mismo tiempo, y no queda claro cuál valor vale.
+
+La regla general es: **cada dato debe tener un único lugar donde se define**.
+
+- Si el valor **varía por objeto** → se recibe como parámetro del constructor (Opción A)
+- Si el valor **es fijo por clase** → se asigna dentro de la clase, no se recibe desde afuera (Opción B)
 
 ---
 
@@ -76,11 +121,11 @@ public class Luigi extends Personaje { ... }
 El método `main` instancia las clases, es decir, crea los **objetos**. Los objetos `mario` y `luigi` están declarados del tipo `Movimientos` (la interface), pero el objeto real creado con `new` es `Mario` o `Luigi` respectivamente.
 
 ```java
-Movimientos mario = new Mario("rojo", "mario"); // tipo: interface Movimientos, objeto real: Mario
-Movimientos luigi = new Luigi("verde", "luigi"); // tipo: interface Movimientos, objeto real: Luigi
+Movimientos mario = new Mario("rojo", "mario", 1); // tipo: interface Movimientos, objeto real: Mario
+Movimientos luigi = new Luigi("verde", "luigi", 3); // tipo: interface Movimientos, objeto real: Luigi
 ```
 
-Al momento de crear el objeto, los campos entre paréntesis son los **parámetros del constructor** — un método especial que se ejecuta al crear el objeto. Deben pasarse sí o sí al instanciar.
+Al momento de crear el objeto, los campos entre paréntesis son los **parámetros del constructor** — un método especial que se ejecuta al crear el objeto.
 
 Llamando al mismo método sobre distintos objetos:
 
@@ -101,7 +146,7 @@ Como `mario` y `luigi` están declarados del tipo `Movimientos`, **solo pueden l
 // Esto NO funciona: luigi.usarAspiradora() ❌
 // Movimientos no conoce ese método
 
-Luigi luigiHabilidad = new Luigi("verde", "luigi"); // tipo concreto
+Luigi luigiHabilidad = new Luigi("verde", "luigi", 2); // tipo concreto
 luigiHabilidad.usarAspiradora(); // ✅
 ```
 
@@ -117,10 +162,10 @@ java Main
 ### Output esperado
 
 ```
-mario tiene el color: rojo y se mueve arriba
-luigi tiene el color: verde SALTA MAS ALTO QUE MARIO
-luigi tiene el color: verde y se mueve para la derecha
-mario tiene el color: rojo y se mueve para la izquierda
+mario tiene el color: rojo y tiene una altura: 1 y se mueve arriba
+luigi tiene el color: verde y tiene una altura: 2 SALTA MAS ALTO QUE MARIO
+luigi tiene el color: verde y tiene una altura: 2 y se mueve para la derecha
+mario tiene el color: rojo y tiene una altura: 1 y se mueve para la izquierda
 luigi usa el Poltergust 3000 para atrapar fantasmas!
 ```
 
@@ -138,14 +183,18 @@ Movimientos
    implements
        ↑
   Personaje
-  - color: String
+  - color: String        (private   → acceso via getColor())
+  # altura: int          (protected → acceso directo desde hijas)
   + getColor(): String
-  + Personaje(color)
+  + Personaje(color, altura)
        ↑
     extends
-    ↙       ↘
-Mario       Luigi
-- nombre    - nombre
-            - tieneAspiradora: boolean
-            + usarAspiradora()
+    ↙           ↘
+Mario             Luigi
+- nombre          - nombre
++ Mario(color,    - tieneAspiradora: boolean
+  nombre, altura) + Luigi(color, nombre, altura)
+                  + usarAspiradora()
 ```
+
+> En UML, `#` representa `protected` y `-` representa `private`.

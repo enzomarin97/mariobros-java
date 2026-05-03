@@ -1,5 +1,6 @@
 public class Personaje implements Movimientos {
 	private String color;
+    protected int altura;
     
     //protected String color;
 
@@ -7,9 +8,11 @@ public class Personaje implements Movimientos {
     public String getColor() {
         return color;
     }
-    public Personaje(String color) {
+    public Personaje(String color, int altura) {
         this.color = color;
+        this.altura = altura;
 	}
+    
     @Override
     public void moverIzquierda() {
         
